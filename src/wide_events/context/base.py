@@ -1,0 +1,45 @@
+from dataclasses import dataclass
+from contextvars import Token, ContextVar
+from typing import ClassVar, Any
+from wide_events.context.ids import uuid4_hex
+from abc import ABC, abstractclassmethod
+
+class ReturnContextVars:
+
+    @staticmethod
+    def with_uuid4(base_name:str = '', _default:Any=None):
+        return ContextVar(base_name + uuid4_hex(), default=_default)
+
+@dataclass
+class BaseContext(ABC):
+    """Base for a dict held in a ContextVar: `init()` opens a fresh one, `drop()` closes it and restores the outer one."""
+
+    token: Token
+
+    _contex_var: ClassVar[ContextVar[Any]]
+    context_default: ClassVar[Any]
+
+    @classmethod
+    def check_or_raise_contex_var(cls):
+        """The subclass's ContextVar; raises ValueError if the subclass set none."""
+        if not hasattr(cls, "_contex_var"):
+            raise ValueError("Internal: ContextVar for Event is not set")
+        return cls._contex_var
+
+    def drop(self):
+        """Restore the dict that was current before `init()` and return this one's, or None if it was never opened."""
+        ctx_var = self.check_or_raise_contex_var()
+        ctx = ctx_var.get()
+        ctx_var.reset(self.token)
+        return ctx
+
+    @classmethod
+    def init(cls):
+        """Open a fresh empty dict in the ContextVar and return the context that can drop it."""
+        ctx_var = cls.check_or_raise_contex_var()
+        token = ctx_var.set(cls.context_default)
+        return cls(token)
+
+    @abstractclassmethod
+    def set(cls, **kwargs):
+        ...
