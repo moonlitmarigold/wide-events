@@ -5,9 +5,14 @@ from wide_events.context.ids import uuid4_hex
 from abc import ABC, abstractclassmethod
 
 class ReturnContextVars:
+    """Factories for the ContextVars that contexts hold their value in."""
 
     @staticmethod
     def with_uuid4(base_name:str = '', _default:Any=None):
+        """A new ContextVar named `base_name` plus a random hex suffix, with `_default` as its default.
+
+        The default object is shared: every context that never set the var gets this same object back.
+        """
         return ContextVar(base_name + uuid4_hex(), default=_default)
 
 @dataclass
@@ -42,4 +47,5 @@ class BaseContext(ABC):
 
     @abstractclassmethod
     def set(cls, **kwargs):
+        """Write to the current value; each subclass defines what its arguments mean."""
         ...
