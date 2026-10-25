@@ -1,0 +1,35 @@
+[project]
+name = "wide-events"
+version = "0.1.0"
+description = "Wide events (canonical log lines) for any Python program, with structlog terminal logging and check results."
+readme = "README.md"
+authors = [
+    { name = "moonlitmarigold", email = "moonlitmarigold12@gmail.com" }
+]
+requires-python = ">=3.13"
+# the core (context, blocks, event, collectors, results, checks, formatters) needs only the stdlib
+dependencies = []
+
+[project.optional-dependencies]
+log = [
+    "rich>=15.0.0",
+    "structlog>=26.1.0",
+]
+ui = [
+    "questionary>=2.1.1",
+    "rich>=15.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "wide-events[log,ui]",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
