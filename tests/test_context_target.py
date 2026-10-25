@@ -1,4 +1,4 @@
-from wide_events.context import ContextEvent
+from wide_events.blocks import ContextEvent
 from dataclasses import dataclass
 from contextvars import ContextVar
 from uuid import uuid4

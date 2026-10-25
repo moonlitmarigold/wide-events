@@ -2,7 +2,7 @@ import logging
 from functools import wraps
 from typing import ClassVar
 
-from .context import ContextBlock, ContextEvent
+from .blocks import ContextBlock, ContextEvent
 
 # the logger every finished wide event is written to; log handlers route it to the log file only
 EVENT_LOGGER = "wide_events.event"

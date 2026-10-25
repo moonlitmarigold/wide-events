@@ -1,6 +1,6 @@
 from wide_events.context.base import BaseContext, ReturnContextVars
 from dataclasses import dataclass
-from wide_events.context.errors import BlockAlreadyAttached
+from wide_events.blocks.errors_2 import BlockAlreadyAttached
 
 @dataclass
 class ContextBlock(BaseContext):

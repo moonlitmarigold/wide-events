@@ -1,5 +1,5 @@
 from wide_events.blocks import TimerEventBlock
-from wide_events.context import ContextBlock, ContextEvent
+from wide_events.blocks import ContextBlock, ContextEvent
 from multiprocessing import Pool
 import asyncio
 import threading

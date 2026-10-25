@@ -1,4 +1,4 @@
-from wide_events.context.base import ContextDict, ReturnContextVars
+from wide_events.context import ContextDict, ReturnContextVars
 
 class ContextEvent(ContextDict):
 

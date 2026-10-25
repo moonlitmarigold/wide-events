@@ -4,7 +4,7 @@ from wide_events.event import WideEvent, log_event
 from wide_events.log import *
 from pathlib import Path
 from wide_events.blocks import EventBlock
-from wide_events.context import ContextEvent
+from wide_events.blocks import ContextEvent
 
 class MainRun(LogClass):
 

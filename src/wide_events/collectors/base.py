@@ -1,5 +1,5 @@
 import enum
-from ..context import ContextEvent
+from ..blocks import ContextEvent
 
 class CollectorHooks(enum.Enum):
 

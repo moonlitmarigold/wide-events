@@ -1,4 +1,5 @@
-from ..context import ContextBlock, ContextEvent
+from .context_blocks import ContextBlock
+from .event import ContextEvent
 from dataclasses import dataclass
 from typing import ClassVar
 from contextvars import ContextVar
