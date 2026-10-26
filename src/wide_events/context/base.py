@@ -3,6 +3,7 @@ from contextvars import Token, ContextVar
 from typing import ClassVar, Any, Callable
 from wide_events.context.ids import uuid4_hex
 from abc import ABC, abstractclassmethod
+from typing import Self
 
 class ReturnContextVars:
     """Factories for the ContextVars that contexts hold their value in."""
@@ -14,6 +15,9 @@ class ReturnContextVars:
         The default object is shared: every context that never set the var gets this same object back.
         """
         return ContextVar(base_name + uuid4_hex(), default=_default)
+
+# marks "no default passed", since None is a valid default
+_NO_DEFAULT = object()
 
 @dataclass
 class BaseContext(ABC):
@@ -54,3 +58,18 @@ class BaseContext(ABC):
     def set(cls, **kwargs):
         """Write to the current value; each subclass defines what its arguments mean."""
         ...
+
+    def __init_subclass__(cls, default:Any=_NO_DEFAULT, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # every subclass gets its own var unless its body sets one
+        if "_contex_var" not in cls.__dict__:
+            var_default = None if default is _NO_DEFAULT else default
+            cls._contex_var = ReturnContextVars.with_uuid4(cls.__name__ + "-", var_default)
+        # an explicit default beats an inherited context_default, but not one in the class body
+        if default is not _NO_DEFAULT and "context_default" not in cls.__dict__:
+            cls.context_default = lambda: default
+
+    @classmethod
+    def new(cls, name: str, default:Any=_NO_DEFAULT) -> type[Self]:
+        """A subclass of this context with its own ContextVar."""
+        return type(name, (cls,), {"__module__": cls.__module__}, default=default)
