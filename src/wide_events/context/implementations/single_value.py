@@ -4,7 +4,7 @@ from typing import ClassVar, Any
 from contextvars import ContextVar
 
 @dataclass
-class SingleValue(BaseContext):
+class SingleValueContext(BaseContext):
     """Base for a single value held in a ContextVar; a subclass sets `_contex_var`."""
 
     _contex_var: ClassVar[ContextVar[Any]]

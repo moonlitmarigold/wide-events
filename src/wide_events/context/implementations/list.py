@@ -4,7 +4,7 @@ from typing import ClassVar
 from contextvars import ContextVar
 
 @dataclass
-class ContextCollectors(BaseContext):
+class ContextList(BaseContext):
     """A list held in a ContextVar, for the collectors of the current context."""
 
     _contex_var: ClassVar[ContextVar[list]]
