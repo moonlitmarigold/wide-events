@@ -1,7 +1,17 @@
-from wide_events.context import ContextDict, ReturnContextVars
+from wide_events.context import ContextDict, SingleValueContext
+from dataclasses import dataclass
+from .base import EventBlock
 
-class ContextEvent(ContextDict):
-    """The current wide event: a ContextDict with its own ContextVar."""
+LogContext = ContextDict.new("wide-events")
+#ResultContext = ContextDict.new("results") Results later
 
-    _contex_var = ReturnContextVars.with_uuid4("wide-events-", {})
-    context_default = {}
+@dataclass
+class SampleLogEvent(EventBlock):
+
+    namespace = "log_event"
+    use_namespace_on_write = False
+    _context_event = LogContext
+
+ClassForLogEvent = SingleValueContext.new("class-event-log", SampleLogEvent)
+LogEvent:EventBlock = ClassForLogEvent.get()
+# TODO: Dynamic LogEvent -> fixed to SampleLogEvent at import; move the choice to the planned config library

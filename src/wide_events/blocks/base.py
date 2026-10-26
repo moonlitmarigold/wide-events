@@ -1,7 +1,7 @@
 from .context_blocks import ContextBlock
-from .event import ContextEvent
 from dataclasses import dataclass
 from typing import ClassVar
+from ..context import ContextDict
 from contextvars import ContextVar
 
 @dataclass
@@ -28,7 +28,7 @@ class EventBlock:
     append_list:ClassVar[bool] = False
 
     abstract: ClassVar[bool] = True
-    _context_event: ClassVar[type[ContextEvent]] = ContextEvent
+    _context_event: ClassVar[type[ContextDict]] # Add a class Check!
 
     def __post_init__(self):
         self._attach()
