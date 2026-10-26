@@ -52,6 +52,7 @@ class BaseContext(ABC):
 
     @classmethod
     def get(cls):
+        """The current value, or the ContextVar's default when no context is open."""
         return cls._contex_var.get()
 
     @abstractclassmethod
@@ -60,6 +61,12 @@ class BaseContext(ABC):
         ...
 
     def __init_subclass__(cls, default:Any=_NO_DEFAULT, **kwargs):
+        """Give the subclass its own ContextVar, unless its body sets `_contex_var`.
+
+        Args:
+            default: The new ContextVar's default. If given, `context_default` returns it too, unless the class body
+                sets one; it is the same object every time, so a mutable default is shared by every opened context.
+        """
         super().__init_subclass__(**kwargs)
         # every subclass gets its own var unless its body sets one
         if "_contex_var" not in cls.__dict__:

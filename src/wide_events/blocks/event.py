@@ -7,6 +7,7 @@ LogContext = ContextDict.new("wide-events")
 
 @dataclass
 class SampleLogEvent(EventBlock):
+    """The `log_event` block, which writes its fields at the top level of the `LogContext` event."""
 
     namespace = "log_event"
     use_namespace_on_write = False
