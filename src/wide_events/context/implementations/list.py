@@ -13,4 +13,7 @@ class ContextList(BaseContext):
     @classmethod
     def set(cls, _list:list):
         """Extend the current list with `_list` in place."""
-        cls._contex_var.get().extend(_list)
+        if isinstance(_list, list):
+            cls._contex_var.get().extend(_list)
+        else:
+            cls._contex_var.get().append(_list)

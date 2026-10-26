@@ -46,6 +46,10 @@ class BaseContext(ABC):
         token = ctx_var.set(cls.context_default())
         return cls(token)
 
+    @classmethod
+    def get(cls):
+        return cls._contex_var.get()
+
     @abstractclassmethod
     def set(cls, **kwargs):
         """Write to the current value; each subclass defines what its arguments mean."""

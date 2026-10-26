@@ -14,8 +14,7 @@ class ContextDict(BaseContext):
     def set(cls, **kwargs):
         """Set `kwargs` at the top level of the current event, replacing existing values; without an open event they are
         lost."""
-        ctx = cls.get()
-        ctx.update(kwargs)
+        cls.update(kwargs)
 
     @classmethod
     def update(cls, payload:dict, drop_none:bool=True, append_lists:bool=False):
@@ -51,8 +50,3 @@ class ContextDict(BaseContext):
                     value = list(value)
                 ctx[key] = value
         return ctx
-
-    @classmethod
-    def get(cls):
-        """The current event's dict, or a new empty dict when no event is open."""
-        return cls._contex_var.get()
