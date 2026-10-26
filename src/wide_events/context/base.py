@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from contextvars import Token, ContextVar
-from typing import ClassVar, Any
+from typing import ClassVar, Any, Callable
 from wide_events.context.ids import uuid4_hex
 from abc import ABC, abstractclassmethod
 
@@ -22,7 +22,8 @@ class BaseContext(ABC):
     token: Token
 
     _contex_var: ClassVar[ContextVar[Any]]
-    context_default: ClassVar[Any]
+    # a factory, not a value: init() calls it, so every opened context gets its own object
+    context_default: ClassVar[Callable[[], Any]]
 
     @classmethod
     def check_or_raise_contex_var(cls):
@@ -40,9 +41,9 @@ class BaseContext(ABC):
 
     @classmethod
     def init(cls):
-        """Open a fresh empty dict in the ContextVar and return the context that can drop it."""
+        """Open a fresh value from `context_default()` in the ContextVar and return the context that can drop it."""
         ctx_var = cls.check_or_raise_contex_var()
-        token = ctx_var.set(cls.context_default)
+        token = ctx_var.set(cls.context_default())
         return cls(token)
 
     @abstractclassmethod

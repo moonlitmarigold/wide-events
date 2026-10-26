@@ -8,7 +8,7 @@ class ContextDict(BaseContext):
     """The current wide event: a nested dict that code adds fields to while it runs."""
 
     _contex_var:ClassVar[ContextVar[dict]]
-    context_default = {}
+    context_default = dict
 
     @classmethod
     def set(cls, **kwargs):

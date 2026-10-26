@@ -8,7 +8,7 @@ class ContextList(BaseContext):
     """A list held in a ContextVar, for the collectors of the current context."""
 
     _contex_var: ClassVar[ContextVar[list]]
-    context_default = []
+    context_default = list
 
     @classmethod
     def set(cls, _list:list):
