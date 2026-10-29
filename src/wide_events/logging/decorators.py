@@ -4,11 +4,14 @@ from ..blocks import ContextCollection
 from .base import LogContext, ContextNames
 
 def sample_log(text, event:dict):
+    """Print `text` and `event`, as JSON, on one line."""
     print(f"{text} : {json.dumps(event)}")
 
 log = sample_log
 
 def log_event(func):
+    """Run `func` in a fresh `LogContext`; afterwards `log` its fields if a `LogContext` was already open, otherwise
+    merge them into `LogContext` under the function's name."""
     name = func.__name__
     @wraps(func)
     def wrapper(*args, **kwargs):

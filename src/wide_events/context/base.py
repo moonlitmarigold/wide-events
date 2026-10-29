@@ -17,6 +17,7 @@ class ReturnContextVars:
         return ContextVar(base_name + uuid4_hex(), default=None) # TODO
 
 class ContextNotInitError(Exception):
+    """A write to a context that no `init()` has opened."""
 
     def __init__(self, context_var:ContextVar):
         # TODO AI: Better Error
@@ -44,6 +45,7 @@ class BaseContext(ABC):
 
     @classmethod
     def is_init(cls):
+        """Whether a context of this class is open, i.e. its current value is not None."""
         return cls.get() is not None
 
 

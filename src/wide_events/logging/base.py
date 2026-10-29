@@ -4,6 +4,7 @@ from enum import StrEnum, auto
 from dataclasses import dataclass, field
 
 class ContextNames(StrEnum):
+    """The names of the logging contexts, which are also their keys in `ContextCollection.drop()`."""
 
     log_context = auto()
 
