@@ -1,18 +1,39 @@
-from wide_events.context import ContextDict, SingleValueContext
-from dataclasses import dataclass
-from .base import EventBlock
+from wide_events.context import ContextDict, SingleValueContext, BaseContext
+from dataclasses import dataclass, field
 
-LogContext = ContextDict.new("wide-events")
-#ResultContext = ContextDict.new("results") Results later
+
+from types import TracebackType
+
+
 
 @dataclass
-class SampleLogEvent(EventBlock):
-    """The `log_event` block, which writes its fields at the top level of the `LogContext` event."""
+class ContextCollection:
 
-    namespace = "log_event"
-    use_namespace_on_write = False
-    _context_event = LogContext
+    contexts: list[type[BaseContext]]
+    _opened: list[BaseContext] = field(init=False, default_factory=list)
 
-ClassForLogEvent = SingleValueContext.new("class-event-log", SampleLogEvent)
-LogEvent:EventBlock = ClassForLogEvent.get()
-# TODO: Dynamic LogEvent -> fixed to SampleLogEvent at import; move the choice to the planned config library
+    _result:dict = field(init=False, default_factory=dict)
+
+    def __post_init__(self):
+        self.init()
+
+    @property
+    def result(self):
+        if not self.result:
+            raise AttributeError() # Fix error
+        return self.result
+
+    def init(self):
+        self._opened = [c.init() for c in self.contexts]
+        return self
+
+    def drop(self):
+        return {
+            type(c).__name__:c.drop() for c in self._opened
+        }
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None):
+        self.result = self.drop()
