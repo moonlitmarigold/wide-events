@@ -14,7 +14,13 @@ class ReturnContextVars:
 
         The default object is shared: every context that never set the var gets this same object back.
         """
-        return ContextVar(base_name + uuid4_hex(), default=_default)
+        return ContextVar(base_name + uuid4_hex(), default=None) # TODO
+
+class ContextNotInitError(Exception):
+
+    def __init__(self, context_var:ContextVar):
+        # TODO AI: Better Error
+        pass
 
 # marks "no default passed", since None is a valid default
 _NO_DEFAULT = object()
@@ -35,6 +41,11 @@ class BaseContext(ABC):
         if not hasattr(cls, "_contex_var"):
             raise ValueError("Internal: ContextVar for Event is not set")
         return cls._contex_var
+
+    @classmethod
+    def is_init(cls):
+        return cls.get() is not None
+
 
     def drop(self):
         """Restore the dict that was current before `init()` and return this one's, or None if it was never opened."""
@@ -58,6 +69,9 @@ class BaseContext(ABC):
     @abstractclassmethod
     def set(cls, **kwargs):
         """Write to the current value; each subclass defines what its arguments mean."""
+        if cls._contex_var.get() is None:
+            # TODO AI: Rewrite the subclass methods to call super before
+            raise ContextNotInitError(cls._contex_var)
         ...
 
     def __init_subclass__(cls, default:Any=_NO_DEFAULT, **kwargs):
