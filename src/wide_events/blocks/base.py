@@ -1,17 +1,14 @@
-from .context_blocks import ContextBlock
 from dataclasses import dataclass
 from typing import ClassVar
 from ..context import ContextDict
-from contextvars import ContextVar
 
 @dataclass
 class EventBlock:
     """A namespaced part of the current wide event: its fields go under `path`, its parents' namespaces and then its
     own. A subclass sets `namespace`, or passes `abstract=True` to be a base for other blocks. Creating an instance
-    attaches it to the current event and writes `kwargs`.
+    writes `kwargs`; the block itself is not kept, so it holds no state between calls.
 
     Attributes:
-        multiple: Allow more than one instance per event; otherwise a second one raises BlockAlreadyAttached.
         use_namespace_on_write: Write fields under `path`; False writes them at the event's top level.
         append_list: Extend lists already in the event instead of replacing them.
         drop_none: Skip None values.
@@ -22,7 +19,6 @@ class EventBlock:
     namespace: ClassVar[str | None] = None
     parent: ClassVar[type["EventBlock"] | None] = None
     path: ClassVar[tuple[str, ...]] = ()
-    multiple: ClassVar[bool] = False
     drop_none:ClassVar[bool] = True
     use_namespace_on_write:ClassVar[bool] = True
     append_list:ClassVar[bool] = False
@@ -31,7 +27,6 @@ class EventBlock:
     _context_event: ClassVar[type[ContextDict]] # Add a class Check!
 
     def __post_init__(self):
-        self._attach()
         if self.kwargs:
             self.set(**self.kwargs)
 
@@ -75,13 +70,12 @@ class EventBlock:
                 f"{cls.__name__}.parent is {parent.__name__}, which is abstract and has "
                 f"no namespace of its own to nest under."
             )
-        if parent.multiple:
-            raise TypeError(
-                f"{cls.__name__} cannot nest under {parent.__name__}: it has "
-                f"'multiple = True', so it renders as a list and has no single dict to "
-                f"nest into."
-            )
+        parent._check_nestable(cls)
         return parent.path + (namespace,)
+
+    @classmethod
+    def _check_nestable(cls, child:type["EventBlock"]):
+        """Raise TypeError if `child` cannot nest under this block; every stateless block can be nested into."""
 
     @classmethod
     def get_key(cls):
@@ -97,42 +91,25 @@ class EventBlock:
             raise TypeError(f"{cls.__name__} must define a 'namespace'")
         return cls.path
 
-    def set(self, **kwargs):
+    @classmethod
+    def set(cls, **kwargs):
         """Write `kwargs` to the current event, under the block's path unless `use_namespace_on_write` is False; return the
         block."""
-        if self.use_namespace_on_write:
-            self._context_event.merge(self.get(), kwargs, self.drop_none, self.append_list)
+        if cls.use_namespace_on_write:
+            cls._context_event.merge(cls.get(), kwargs, cls.drop_none, cls.append_list)
         else:
-            self._context_event.update(kwargs, self.drop_none, self.append_list)
-        return self
-
-    def _attach(self):
-        ContextBlock.attach(self.get_key(), self, self.multiple)
+            cls._context_event.update(kwargs, cls.drop_none, cls.append_list)
+        return cls
 
     @classmethod
     def from_kwargs(cls, **kwargs):
-        """Write `kwargs` to the block already attached to the current event, or attach a new one; a `multiple` block
-        always gets a new one."""
-        if not cls.multiple:
-            attached = cls.current()
-            if attached is not None:
-                return attached.set(**kwargs)
+        """Write `kwargs` to the current event through a new block."""
         return cls(kwargs=kwargs)
 
     @classmethod
-    def current(cls):
-        """The block of this class on the current event (the latest one if `multiple`), or None."""
-        _block = ContextBlock.get().get(cls.get_key())
-        if _block is None:
-            return None
-        if cls.multiple:
-            return _block[-1]
-        else:
-            return _block
-
-    def get(self):
+    def get(cls):
         """The block's dict inside the current event, created on first access."""
-        ctx = self._context_event.get()
-        for part in self.get_path():
+        ctx = cls._context_event.get()
+        for part in cls.get_path():
             ctx = ctx.setdefault(part, {})
         return ctx
