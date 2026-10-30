@@ -18,16 +18,21 @@ def log_event(func):
 
         # TODO: Run Collectors
         # TODO: Wrap in a try/expect
-        result = func(*args, **kwargs)
+        try:
+            result = func(*args, **kwargs)
+            return result
+        except Exception as e:
 
-        _drop = ctx.drop()
-        context_result = _drop.get(ContextNames.log_context)
+            raise e
+        finally:
+            _drop = ctx.drop()
+            context_result = _drop.get(ContextNames.log_context)
 
-        if ContextNames.log_context in _not_init:
-            # the fields travel as `record.event`, which JSONFORMATTER spreads into the line
-            logger.info(name, extra={"event": context_result})
-        else:
-            LogContext.update({name:context_result})
+            if ContextNames.log_context in _not_init:
+                # the fields travel as `record.event`, which JSONFORMATTER spreads into the line
+                logger.info(name, extra={"event": context_result})
+            else:
+                LogContext.update({name:context_result})
 
         return result
     return wrapper
