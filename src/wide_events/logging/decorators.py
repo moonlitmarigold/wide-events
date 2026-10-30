@@ -36,3 +36,7 @@ def log_event(func):
 
         return result
     return wrapper
+
+def record_function_call():
+    # TODO: Implement the record function call
+    ...
