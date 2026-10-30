@@ -12,8 +12,9 @@ class ContextDict(BaseContext):
 
     @classmethod
     def set(cls, **kwargs):
-        """Set `kwargs` at the top level of the current event, replacing existing values; without an open event they are
-        lost."""
+        """Set `kwargs` at the top level of the current event, replacing existing values; raises ContextNotInitError
+        without an open event."""
+        super().set()
         cls.update(kwargs)
 
     @classmethod

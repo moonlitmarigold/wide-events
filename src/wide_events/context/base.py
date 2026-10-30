@@ -70,9 +70,12 @@ class BaseContext(ABC):
 
     @abstractclassmethod
     def set(cls, **kwargs):
-        """Write to the current value; each subclass defines what its arguments mean."""
+        """Write to the current value; each subclass defines what its arguments mean and calls this first.
+
+        Raises:
+            ContextNotInitError: When no context of this class is open.
+        """
         if cls._contex_var.get() is None:
-            # TODO AI: Rewrite the subclass methods to call super before
             raise ContextNotInitError(cls._contex_var)
         ...
 

@@ -27,7 +27,9 @@ class ContextBlock(BaseContext):
 
         Raises:
             BlockAlreadyAttached: Without `multiple`, when a block is already attached at `key`.
+            ContextNotInitError: When no ContextBlock is open.
         """
+        super().set()
         ctx = ContextBlock.get()
         if multiple:
             ctx.setdefault(key, []).append(block)

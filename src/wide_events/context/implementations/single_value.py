@@ -12,4 +12,5 @@ class SingleValueContext(BaseContext):
     @classmethod
     def set(cls, var:Any):
         """Replace the current value with `var`."""
+        super().set()
         cls._contex_var.set(var)

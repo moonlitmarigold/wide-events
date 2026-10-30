@@ -1,5 +1,8 @@
+import pytest
 from wide_events import context
 from wide_events.context.implementations.list import ContextList
+from wide_events.context.base import ContextNotInitError
+from wide_events.blocks import ContextBlock
 
 
 def test_dict():
@@ -74,3 +77,14 @@ def test_inline_list_gets_fresh_list():
     TestList.set(["a"])
     assert t.drop() == ["a"]
     assert TestList.init().drop() == []
+
+
+@pytest.mark.parametrize("make_context, args, kwargs", [
+    (lambda: context.ContextDict.new("Dict"), (), {"a": "b"}),
+    (lambda: context.ContextList.new("List"), (["a"],), {}),
+    (lambda: context.SingleValueContext.new("Single"), (True,), {}),
+    (lambda: ContextBlock, ("key", object()), {}),
+])
+def test_set_without_init_raises(make_context, args, kwargs):
+    with pytest.raises(ContextNotInitError):
+        make_context().set(*args, **kwargs)
