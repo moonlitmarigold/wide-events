@@ -24,5 +24,6 @@ LogEvent:EventBlock = ClassForLogEvent
 # TODO: Dynamic LogEvent -> fixed to SampleLogEvent at import; move the choice to the planned config library
 
 class LoggerNames(StrEnum):
+    """The names of the package's loggers, for `logging.getLogger` and the `loggers` of `DEFAULT_LOGGING`."""
 
     EVENT_LOGGER = "wide_events.event"
