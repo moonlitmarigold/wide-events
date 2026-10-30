@@ -12,6 +12,7 @@ dependencies = []
 
 [project.optional-dependencies]
 log = [
+    "python-json-logger>=4.2.0",
     "rich>=15.0.0",
     "structlog>=26.1.0",
 ]

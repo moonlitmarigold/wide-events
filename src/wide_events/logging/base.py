@@ -22,3 +22,7 @@ class SampleLogEvent(EventBlock):
 ClassForLogEvent = SampleLogEvent
 LogEvent:EventBlock = ClassForLogEvent
 # TODO: Dynamic LogEvent -> fixed to SampleLogEvent at import; move the choice to the planned config library
+
+class LoggerNames(StrEnum):
+
+    EVENT_LOGGER = "wide_events.event"
