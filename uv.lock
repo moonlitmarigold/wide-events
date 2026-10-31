@@ -51,6 +51,15 @@ wheels = [
 ]
 
 [[package]]
+name = "phx-class-registry"
+version = "5.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1c/8a/112b75d64bf57ce8dc561ae7e084d54a8b22c8203b5a1506afeed42520d7/phx_class_registry-5.2.2.tar.gz", hash = "sha256:c8f792b8856a6c0af990f648be108de10ed0560771555d81a0452c4627f8f489", size = 162989, upload-time = "2026-05-12T23:13:27.952Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/a2/340e189bab289045a0c0d9cd0ab3689cfc23a62fd32c8171a5c31382bb9e/phx_class_registry-5.2.2-py3-none-any.whl", hash = "sha256:38901ed17fb42a548a781e14d46b3d3b1560ead772424449a3425ee1b77a5c6f", size = 15920, upload-time = "2026-05-12T23:13:25.375Z" },
+]
+
+[[package]]
 name = "pluggy"
 version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -179,6 +188,10 @@ wheels = [
 name = "wide-events"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "phx-class-registry" },
+    { name = "pluggy" },
+]
 
 [package.optional-dependencies]
 log = [
@@ -199,6 +212,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "phx-class-registry", specifier = ">=5.2.2" },
+    { name = "pluggy", specifier = ">=1.7.0" },
     { name = "python-json-logger", marker = "extra == 'log'", specifier = ">=4.2.0" },
     { name = "questionary", marker = "extra == 'ui'", specifier = ">=2.1.1" },
     { name = "rich", marker = "extra == 'log'", specifier = ">=15.0.0" },

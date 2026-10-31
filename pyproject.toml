@@ -8,7 +8,10 @@ authors = [
 ]
 requires-python = ">=3.13"
 # the core (context, blocks, event, collectors, results, checks, formatters) needs only the stdlib
-dependencies = []
+dependencies = [
+    "phx-class-registry>=5.2.2",
+    "pluggy>=1.7.0",
+]
 
 [project.optional-dependencies]
 log = [

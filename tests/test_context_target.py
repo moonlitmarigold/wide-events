@@ -5,6 +5,7 @@ from uuid import uuid4
 from typing import ClassVar
 from wide_events.blocks.event import ContextCollection
 from wide_events.logging import LogContext, LogEvent, ContextNames, log_event
+from wide_events.collectors import *
 
 
 def test_new_blocks():
@@ -44,3 +45,10 @@ def test_log_event():
     res = sample_func()
 
     assert res == 1
+
+class TestHook(LoggingCollector):
+    name = "hook_name"
+
+    @logging_hookimpl
+    def on_create(self, request):
+        print('test')
