@@ -1,15 +1,8 @@
 from ..blocks.base import EventBlock
 from ..context import ContextDict, SingleValueContext, BaseContext
+from ..context.log import ContextNames, LogContext
 from enum import StrEnum, auto
 from dataclasses import dataclass, field
-
-class ContextNames(StrEnum):
-    """The names of the logging contexts, which are also their keys in `ContextCollection.drop()`."""
-
-    log_context = auto()
-
-LogContext = ContextDict.new(ContextNames.log_context)
-#ResultContext = ContextDict.new("results") Results later
 
 @dataclass
 class SampleLogEvent(EventBlock):
