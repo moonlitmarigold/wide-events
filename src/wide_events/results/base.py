@@ -89,13 +89,13 @@ class ExceptionResult(BaseResult):
     result_name = "ExceptionResult"
 
     exception: str | None
-    traceback: str | None
+    traceback: list[str] | None
 
     @classmethod
     def from_exception(cls, exc: Exception):
         """A failed result with the type and traceback of `exc`."""
         snapshot = traceback.TracebackException.from_exception(exc)
-        return cls(snapshot.exc_type_str, "".join(snapshot.format()))
+        return cls(snapshot.exc_type_str, [l for l in snapshot.format()])
 
     def dump(self, _super:bool=True):
         """The exception type and traceback as JSON data."""
