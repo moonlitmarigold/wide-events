@@ -12,6 +12,7 @@ from ._func_call import FuncCallCollector, func_call_hookimpl
 
 
 class EnvironmentCollector(FuncCallCollector):
+    """Writes `environment: {host, python, pid}` on create."""
 
     name = "EnvironmentCollector"
 
@@ -24,10 +25,17 @@ class EnvironmentCollector(FuncCallCollector):
     @staticmethod
     @cache
     def static_environment():
+        """`{host, python}`, computed on the first call and cached for the process."""
         return {"host": socket.gethostname(), "python": platform.python_version()}
 
 
 class ArgumentsCollector(FuncCallCollector):
+    """Writes the call's bound arguments, defaults included, as `args: {param: summarize(param, value)}`, without
+    `self` and `cls`.
+
+    Input: `f(user="ann", api_key="s3cr3t", obj=object())` -> `args: {user: "ann", api_key: "[REDACTED]", n: 3,
+    obj: "object"}`.
+    """
 
     name = "ArgumentsCollector"
 
@@ -56,6 +64,8 @@ class ArgumentsCollector(FuncCallCollector):
 
 
 class ResourceCollector(FuncCallCollector):
+    """Writes `resources: {cpu_ms, max_rss, thread}` on finish or exception, with `cpu_ms` the thread's CPU time
+    since `on_create`."""
 
     name = "ResourceCollector"
 
@@ -73,6 +83,7 @@ class ResourceCollector(FuncCallCollector):
         self.save_usage()
 
     def save_usage(self):
+        """Write `resources` from the CPU start in `state["cpu_start"]` and the current `getrusage`."""
         self.set(resources={
             "cpu_ms": round((time.thread_time() - self.state["cpu_start"]) * 1000, 2),
             # the process's peak so far, not this call's; KB on Linux, bytes on macOS

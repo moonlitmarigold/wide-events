@@ -10,6 +10,8 @@ from ..results import ExceptionResult
 CollectorState = ContextDict.new("collector_state")
 
 class CollectorError(ExceptionResult):
+    """An exception raised inside a collector hook, as `ExceptionResult` tagged `result_name: "CollectorError"`."""
+
     result_name = "CollectorError"
 
 class BaseCollector(ABC):
@@ -38,7 +40,8 @@ class BaseCollector(ABC):
 
     @property
     @abstractmethod
-    def context(self) -> BaseContext: ...
+    def context(self) -> BaseContext:
+        """The context the collector writes to, e.g. `LogContext`."""
 
     def __init_subclass__(cls, **kwargs) -> None:
         for hook_name in getattr(cls, "hook_names", ()):

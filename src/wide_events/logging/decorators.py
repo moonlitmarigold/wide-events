@@ -6,6 +6,12 @@ from ..collectors import LoggingCollector, CollectorState
 from typing import Callable
 
 def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, logger):
+    """A `log_event`-style decorator that opens `_list_ctx` per call, runs the hooks of the plugin manager `_pm()`
+    returns, and emits the drop's `context_name` entry on `logger` (or merges it into the outer `LogContext`).
+
+    Input: `record_event([LogContext, CollectorState], LoggingCollector.return_pm, ContextNames.log_context,
+    logger)` -> `log_event`.
+    """
     def log_event(func):
         """Run `func` in a fresh `LogContext`; afterwards merge its fields into the outer `LogContext` under the
         function's name, or, without an outer one, emit them as one record on the `EVENT_LOGGER`."""

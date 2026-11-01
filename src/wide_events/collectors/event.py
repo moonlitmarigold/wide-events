@@ -7,6 +7,7 @@ from ._logging import LoggingCollector, logging_hookimpl
 
 
 class ExceptionCollector(LoggingCollector):
+    """Writes the raised exception as `exception: {result_name, exception, traceback: [line, ...]}`."""
 
     name = "ExceptionCollector"
 
@@ -16,6 +17,8 @@ class ExceptionCollector(LoggingCollector):
 
 
 class TimingCollector(LoggingCollector):
+    """Writes `duration_ms: float` (rounded to 0.01) from `on_create` to `on_finish` or `on_exception`; the running
+    `_Timer` lives in `state["timer"]`."""
 
     name = "TimingCollector"
 
@@ -33,6 +36,7 @@ class TimingCollector(LoggingCollector):
 
 
 class TimestampCollector(LoggingCollector):
+    """Writes `started_at` on create and `finished_at` on finish or exception, both as UTC `datetime`."""
 
     name = "TimestampCollector"
 
@@ -50,6 +54,7 @@ class TimestampCollector(LoggingCollector):
 
 
 class OutcomeCollector(LoggingCollector):
+    """Writes `outcome: Status.success` when the function returns, `Status.failed` when it raises."""
 
     name = "OutcomeCollector"
 
@@ -63,6 +68,7 @@ class OutcomeCollector(LoggingCollector):
 
 
 class IdentityCollector(LoggingCollector):
+    """Writes `event_id` (32 hex chars), `function` (`func.__qualname__`, e.g. `"Job.run"`) and `module` on create."""
 
     name = "IdentityCollector"
 
@@ -72,6 +78,8 @@ class IdentityCollector(LoggingCollector):
 
 
 class ResultCollector(LoggingCollector):
+    """Writes a returned `BaseResult` as `result: result.dump()`, any other non-None value only as
+    `result_type` (e.g. `"int"`)."""
 
     name = "ResultCollector"
 
