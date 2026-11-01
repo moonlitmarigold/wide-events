@@ -85,7 +85,9 @@ class StatusCount(BaseResult):
 @dataclass(frozen=True)
 class ExceptionResult(BaseResult):
     """The type and formatted traceback of a raised exception, or None for both."""
-    
+
+    result_name = "ExceptionResult"
+
     exception: str | None
     traceback: str | None
 
