@@ -1,49 +1,46 @@
 from functools import wraps
 import logging
 from ..blocks import ContextCollection
-from .base import LogContext, ContextNames, LoggerNames
+from .base import LogContext, ContextNames, LoggerNames, BaseContext
 from ..collectors import LoggingCollector, CollectorState
+from typing import Callable
 
-logger = logging.getLogger(LoggerNames.EVENT_LOGGER)
+def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, logger):
+    def log_event(func):
+        """Run `func` in a fresh `LogContext`; afterwards merge its fields into the outer `LogContext` under the
+        function's name, or, without an outer one, emit them as one record on the `EVENT_LOGGER`."""
+        name = func.__name__
 
-def log_event(func):
-    """Run `func` in a fresh `LogContext`; afterwards merge its fields into the outer `LogContext` under the
-    function's name, or, without an outer one, emit them as one record on the `EVENT_LOGGER`."""
-    name = func.__name__
-    # TODO: Get the pm inside wrapper (per call): here the first @log_event at import fills the cache, so collectors
-    #  defined later never run
-    pm = LoggingCollector.return_pm()
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        _list_ctx = [LogContext, CollectorState]
-        _not_init = [c.__name__ for c in _list_ctx if not c.is_init()]
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            _not_init = [c.__name__ for c in _list_ctx if not c.is_init()]
+            pm = _pm()
 
-        ctx = ContextCollection(_list_ctx).init()
+            ctx = ContextCollection(_list_ctx).init()
 
-        # TODO: No collector runs yet: return_pm registers the registry keys (strings), not instances
-        #  -> pm.register(LOGGING_COLLECTORS[name], name=name), later from DEFAULT_COLLECTORS
-        # TODO: Pass the call info (name, args, kwargs) instead of request={}, and rename request/response (Django names)
-        pm.hook.on_create(request={})
-        try:
-            result = func(*args, **kwargs)
-            # TODO: Run pm.hook.on_finish(request=..., response=result)
-            return result
-        except Exception as e:
-            # TODO: Run pm.hook.on_exception(request=..., exception=e) before re-raising
-            raise e
-        finally:
-            _drop = ctx.drop()
-            context_result = _drop.get(ContextNames.log_context)
+            pm.hook.on_create(name=name, func=func, args=args, kwargs=kwargs)
+            try:
+                result = func(*args, **kwargs)
+                pm.hook.on_finish(name=name, func=func, args=args, kwargs=kwargs, result=result)
+                return result
+            except Exception as e:
+                pm.hook.on_exception(name=name, func=func, args=args, kwargs=kwargs, exception=e)
+                raise e
+            finally:
+                _drop = ctx.drop()
+                context_result = _drop.get(context_name)
 
-            if ContextNames.log_context in _not_init:
-                # the fields travel as `record.event`, which JSONFORMATTER spreads into the line
-                logger.info(name, extra={"event": context_result})
-            else:
-                LogContext.update({name:context_result})
+                if context_name in _not_init:
+                    # the fields travel as `record.event`, which JSONFORMATTER spreads into the line
+                    logger.info(name, extra={"event": context_result})
+                else:
+                    LogContext.update({name:context_result})
 
-    return wrapper
+        return wrapper
+    return log_event
 
-#  TODO: make the log_event more arbitary (base event) and make both record_function_call and log_event inherit from it
+#  TODO: make the log_event more arbitairy (base event) and make both record_function_call and log_event inherit from it
+log_event = record_event([LogContext, CollectorState], LoggingCollector.return_pm, ContextNames.log_context, logging.getLogger(LoggerNames.EVENT_LOGGER))
 
 def record_function_call():
     # TODO: Implement the record function call
