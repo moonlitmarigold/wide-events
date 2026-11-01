@@ -4,9 +4,13 @@ from ..context.log import LogContext
 from class_registry.base import AutoRegister
 from functools import cache, wraps
 from typing import ClassVar, Callable, Any
-from ..context import ContextDict
+from ..context import ContextDict, BaseContext
+from ..results import ExceptionResult
 
 CollectorState = ContextDict.new("collector_state")
+
+class CollectorError(ExceptionResult):
+    result_name = "CollectorError"
 
 class BaseCollector(ABC):
     """Base for collectors, which add fields to the current event from pluggy hooks without the observed code
@@ -32,6 +36,10 @@ class BaseCollector(ABC):
     def hook_names(self) -> tuple[str, ...]:
         """The hook methods that `__init_subclass__` wraps with `save_run`."""
 
+    @property
+    @abstractmethod
+    def context(self) -> BaseContext: ...
+
     def __init_subclass__(cls, **kwargs) -> None:
         for hook_name in getattr(cls, "hook_names", ()):
             func = cls.__dict__.get(hook_name)
@@ -56,9 +64,7 @@ class BaseCollector(ABC):
                 return func(self, *args, **kwargs)
             except Exception as exc:
                 # TODO: Hook Error Event, similar to results -> Universal from exc
-                LogContext.update({"hook_errors": [{
-                    "hook": f"{type(self).__name__}.{hook_name}",
-                    "error": repr(exc)}]})
+                LogContext.update({"hook_errors": [CollectorError.from_exception(exc).dump()]}, append_lists=True)
         return wrapper
 
     @property
