@@ -1,5 +1,14 @@
 from .base import LoggerNames
 
+# TODO: Document the logging settings: what each handler/logger is for, that the console handler is WARNING (so
+#  events at INFO never show there), and how to route events elsewhere (own handler + json formatter + propagate=False)
+# TODO: Class-based settings (approach B): a `Settings` class with ClassVars `collectors`, `event_block` and `logging`
+#  (still a plain dictConfig dict), apps subclass it and call `AppSettings.apply()` once. `apply()` runs dictConfig,
+#  sets the active settings that `return_pm`/`LogEvent` read, and is the freeze point for the cached `return_pm`.
+#  Pydantic only in bigger projects, for loading from files.
+# TODO: A debug setting for logging: one switch (e.g. `Settings.debug`) that adds an extra debug call/handler, so
+#  events and DEBUG records also show on the console during development
+
 # Passed to `logging.config.dictConfig`, as Django's LOGGING setting. Use it as is, or `deepcopy` it and change
 # what differs, e.g. `config["handlers"]["file"]["filename"]`. The console handler needs the `log` extra (rich).
 DEFAULT_LOGGING = {
@@ -36,3 +45,6 @@ DEFAULT_LOGGING = {
     },
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+# TODO: DEBUG Handler/logger -> Wide-Events to the console
+# TODO: Indents on console wide-events

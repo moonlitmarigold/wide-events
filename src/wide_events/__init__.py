@@ -1,5 +1,8 @@
 import logging
 
+# TODO: Restructure the whole project (package layout, module boundaries, what is public); the current one grew
+#  piecemeal from termlog/execflow and mixes WIP (blocks, errors_2, old event) with the new collectors/logging path
+
 from .context import ContextList
 from .blocks import BlockAlreadyAttached, ContextBlock, EventBlock, StatefulEventBlock, ExceptionEvent, HookErrorEvent, TimerEventBlock
 #from .event import WideEvent, log_event
