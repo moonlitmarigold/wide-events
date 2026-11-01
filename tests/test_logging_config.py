@@ -40,8 +40,9 @@ def test_nested_event_writes_one_line(log_file):
 
     [line] = log_file.read_text().splitlines()
     event = json.loads(line)
-    assert (event["message"], event["logger"], event["event"]) == (
-        "outer", LoggerNames.EVENT_LOGGER, {"step": "outer", "inner": {"step": "inner"}}
+    # the collectors add fields of their own (event_id, duration_ms, ...), so only the event's own ones are checked
+    assert (event["message"], event["logger"], event["event"]["step"], event["event"]["inner"]["step"]) == (
+        "outer", LoggerNames.EVENT_LOGGER, "outer", "inner"
     )
 
 
