@@ -1,6 +1,7 @@
 import inspect
 import os
 import platform
+import re
 import resource
 import socket
 import threading
@@ -34,13 +35,15 @@ class ArgumentsCollector(FuncCallCollector):
     """Writes the call's bound arguments, defaults included, as `args: {param: summarize(param, value)}`, without
     `self` and `cls`.
 
-    Input: `f(user="ann", api_key="s3cr3t", obj=object())` -> `args: {user: "ann", api_key: "[REDACTED]", n: 3,
-    obj: "object"}`.
+    Input: `f(user="ann", api_key="s3cr3t", monkey=3, obj=object())` -> `args: {user: "ann",
+    api_key: "[REDACTED]", monkey: 3, obj: "object"}`.
     """
 
     name = "ArgumentsCollector"
 
-    redact: ClassVar[tuple[str, ...]] = ("password", "secret", "token", "key", "auth")
+    redact: ClassVar[frozenset[str]] = frozenset(
+        {"password", "passwd", "secret", "token", "key", "auth", "authorization", "credential"}
+    )
     scalar_types: ClassVar[tuple[type, ...]] = (str, int, float, bool)
     skip_params: ClassVar[frozenset[str]] = frozenset({"self", "cls"})
 
@@ -57,11 +60,20 @@ class ArgumentsCollector(FuncCallCollector):
     def summarize(self, param:str, value):
         """The value to record for `param`: `"[REDACTED]"` for a sensitive name, the value itself for a scalar,
         otherwise only its type name."""
-        if any(word in param.lower() for word in self.redact):
+        if self.is_sensitive(param):
             return "[REDACTED]"
         if value is None or isinstance(value, self.scalar_types):
             return value
         return type(value).__qualname__
+
+    def is_sensitive(self, param:str) -> bool:
+        """Whether a word of `param`, singular or plural, is in `redact`.
+
+        Input: `api_key`, `apiKey`, `auth_tokens` -> True; `monkey`, `keyboard`, `author` -> False
+        """
+        # whole words, not substrings: "key" in "monkey" redacted harmless arguments
+        words = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", param).lower().split("_")
+        return any(word.removesuffix("s") in self.redact for word in words)
 
 
 class ResourceCollector(FuncCallCollector):
