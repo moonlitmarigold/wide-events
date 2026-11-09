@@ -57,10 +57,13 @@ def test_event_block_must_be_an_event_block():
 
 
 def test_apply_configures_logging_and_activates(dict_configs):
-    config = {"version": 1}
-    settings = Settings(logging=config).apply()
+    settings = Settings(logging={"version": 1}).apply()
 
-    assert (dict_configs, Settings.active()) == ([config], settings)
+    # the debug logger is always set, so an earlier debug=True doesn't linger
+    debug_off = {"handlers": [], "level": "NOTSET", "propagate": True}
+    assert (dict_configs, Settings.active()) == (
+        [{"version": 1, "loggers": {LoggerNames.DEBUG: debug_off}}], settings
+    )
 
 
 def test_apply_without_logging_leaves_logging_alone(dict_configs):
