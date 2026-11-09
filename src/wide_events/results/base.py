@@ -26,6 +26,8 @@ class BaseResult:
             return {}
         return {"result_name":self.result_name}
 
+    def __repr__(self) -> str: return f'{self.result_name}'
+
 @dataclass(frozen=True)
 class SingleStatus(BaseResult):
     """The status of one named check or exec."""
@@ -38,6 +40,8 @@ class SingleStatus(BaseResult):
     def dump(self, _super:bool=True):
         """The name and status as JSON data."""
         return {**super().dump(_super), "name":self.name, "status":str(self.status)}
+
+    def __repr__(self) -> str: return super().__repr__() + f"({self.name}): {self.status.value}"
     
 @dataclass(frozen=True)
 class StatusCount(BaseResult):
@@ -81,6 +85,11 @@ class StatusCount(BaseResult):
     def ok(self):
         """True when no result failed."""
         return self.failed == 0 and self.skipped == 0
+
+    def __repr__(self) -> str:
+        """`StatusCount(5): success=3, failed=1, warning=0, skipped=1, queued=0`, with `num` in the brackets."""
+        counts = ", ".join(f"{status.value}={getattr(self, status.value)}" for status in Status)
+        return super().__repr__() + f"({self.num}): {counts}"
     
 @dataclass(frozen=True)
 class ExceptionResult(BaseResult):
@@ -100,3 +109,8 @@ class ExceptionResult(BaseResult):
     def dump(self, _super:bool=True):
         """The exception type and traceback as JSON data."""
         return {**super().dump(_super), "exception":self.exception, "traceback":self.traceback}
+
+    def __repr__(self) -> str:
+        """`ExceptionResult: ValueError: disk gone`, the traceback's last line; `ExceptionResult: None` without one."""
+        last_line = self.traceback[-1].strip() if self.traceback else None
+        return super().__repr__() + f": {last_line}"
