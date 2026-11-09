@@ -7,15 +7,25 @@ from .errors import TimerNotStarted
 
 @dataclass
 class Timer:
+    """Measures one duration and passes it to `save_timer` in milliseconds, rounded to 0.01.
+
+    Input: `Timer(lambda ms: ...).start_timer()`, later `.stop_timer()` -> `save_timer(12.34)`; or `with Timer(...):`.
+    """
 
     save_timer:Callable
     timer_start: float | None = field(init=False, default=None)
 
     def start_timer(self):
+        """Start measuring from now and return the timer."""
         self.timer_start = time.perf_counter()
         return self
 
     def stop_timer(self):
+        """Pass the milliseconds since `start_timer()` to `save_timer`, reset the start and return the timer.
+
+        Raises:
+            TimerNotStarted: When the timer was not started.
+        """
         if not self.timer_start:
             raise TimerNotStarted()
         self.save_timer(round((time.perf_counter() - self.timer_start) * 1000, 2))
