@@ -1,8 +1,8 @@
 import pytest
 from wide_events import context
-from wide_events.context.implementations.list import ContextList
+from wide_events.context.list import ContextList
 from wide_events.context.base import ContextNotInitError
-from wide_events.blocks import ContextBlock
+from wide_events.event import ContextBlock
 
 
 def test_dict():

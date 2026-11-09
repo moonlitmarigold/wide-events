@@ -1,9 +1,10 @@
 from datetime import datetime, UTC
 
-from ..blocks.timer import _Timer
 from ..context.ids import uuid4_hex
+from ..event import Timer
 from ..results import BaseResult, ExceptionResult, Status
-from ._logging import LoggingCollector, logging_hookimpl
+from .base import LoggingCollector
+from .hooks import logging_hookimpl
 
 
 class ExceptionCollector(LoggingCollector):
@@ -18,13 +19,13 @@ class ExceptionCollector(LoggingCollector):
 
 class TimingCollector(LoggingCollector):
     """Writes `duration_ms: float` (rounded to 0.01) from `on_create` to `on_finish` or `on_exception`; the running
-    `_Timer` lives in `state["timer"]`."""
+    `Timer` lives in `state["timer"]`."""
 
     name = "TimingCollector"
 
     @logging_hookimpl
     def on_create(self, name, func, args, kwargs):
-        self.state["timer"] = _Timer(lambda duration: self.set(duration_ms=duration)).start_timer()
+        self.state["timer"] = Timer(lambda duration: self.set(duration_ms=duration)).start_timer()
 
     @logging_hookimpl
     def on_finish(self, name, func, args, kwargs, result):

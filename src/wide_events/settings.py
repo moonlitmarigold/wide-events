@@ -1,4 +1,11 @@
-from .base import LoggerNames
+from enum import StrEnum
+
+
+class LoggerNames(StrEnum):
+    """The names of the package's loggers, for `logging.getLogger` and the `loggers` of `DEFAULT_LOGGING`."""
+
+    EVENT_LOGGER = "wide_events.event"
+    DEBUG = "debug"
 
 # TODO: Document the logging settings: what each handler/logger is for, that the console handler is WARNING (so
 #  events at INFO never show there), and how to route events elsewhere (own handler + json formatter + propagate=False)
@@ -33,7 +40,7 @@ DEFAULT_LOGGING = {
             "rich_tracebacks": True,
         },
         "file": {
-            "class": "wide_events.logging.handlers.FileHandler",
+            "class": "wide_events.log.handlers.FileHandler",
             "filename": "logs/wide_events.log",
             "delay": True,
             "formatter": "json",

@@ -11,3 +11,10 @@ class BlockAlreadyAttached(Exception):
             f".current() to reach the attached block, or set 'multiple = True' if this "
             f"block is meant to attach more than once."
         )
+
+
+class TimerNotStarted(Exception):
+    """Raised when a timer is stopped before it was started."""
+
+    def __init__(self):
+        super().__init__("The Timer has not been started so it cant record a time.")

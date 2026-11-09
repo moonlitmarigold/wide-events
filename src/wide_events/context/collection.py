@@ -1,10 +1,6 @@
-from wide_events.context import ContextDict, SingleValueContext, BaseContext
 from dataclasses import dataclass, field
 
-
-from types import TracebackType
-
-
+from .base import BaseContext
 
 @dataclass
 class ContextCollection:

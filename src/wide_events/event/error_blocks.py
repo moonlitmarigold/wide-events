@@ -1,4 +1,4 @@
-from .base import EventBlock
+from .blocks import EventBlock
 
 class ExceptionEvent(EventBlock):
 

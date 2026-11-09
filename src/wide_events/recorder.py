@@ -1,9 +1,11 @@
 from functools import wraps
 import logging
-from ..blocks import ContextCollection
-from .base import LogContext, ContextNames, LoggerNames, BaseContext
-from ..collectors import LoggingCollector, CollectorState
 from typing import Callable
+
+from .context import BaseContext, ContextCollection
+from .event import CollectorState, ContextNames, LogContext
+from .collectors import LoggingCollector
+from .settings import LoggerNames
 
 def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, logger):
     """A `log_event`-style decorator that opens `_list_ctx` per call, runs the hooks of the plugin manager `_pm()`
@@ -37,7 +39,7 @@ def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, lo
                 context_result = _drop.get(context_name)
 
                 if context_name in _not_init:
-                    # the fields travel as `record.event`, which JSONFORMATTER spreads into the line
+                    # the fields travel as `record.event`, which the `json` formatter of DEFAULT_LOGGING puts into the line
                     logger.info(name, extra={"event": context_result})
                 else:
                     LogContext.update({name:context_result})
@@ -51,3 +53,4 @@ log_event = record_event([LogContext, CollectorState], LoggingCollector.return_p
 def record_function_call():
     # TODO: Implement the record function call
     ...
+# TODO: Combination of FuncCall and LogEvent, that appends the funccall to the Main Event

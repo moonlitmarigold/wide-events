@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from contextvars import Token, ContextVar
 from typing import ClassVar, Any, Callable
-from wide_events.context.ids import uuid4_hex
+from .ids import uuid4_hex
 from abc import ABC, abstractclassmethod
 from typing import Self
 

@@ -1,4 +1,4 @@
-from ..base import BaseContext
+from .base import BaseContext
 from dataclasses import dataclass
 from typing import ClassVar
 from contextvars import ContextVar

@@ -1,13 +1,13 @@
-from wide_events.blocks import EventBlock
+from wide_events.event import EventBlock, LogContext, LogEvent, ContextNames
 from dataclasses import dataclass
 from contextvars import ContextVar
 from uuid import uuid4
 from typing import ClassVar
-from wide_events.blocks.event import ContextCollection
-from wide_events.logging import LogContext, LogEvent, ContextNames, log_event
+from wide_events.context import ContextCollection
+from wide_events.recorder import log_event
 from wide_events.collectors import *
 from copy import deepcopy
-from wide_events.logging import DEFAULT_LOGGING, LoggerNames
+from wide_events.settings import DEFAULT_LOGGING, LoggerNames
 import logging
 import logging.config
 

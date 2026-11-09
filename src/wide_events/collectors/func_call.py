@@ -8,7 +8,8 @@ import time
 from functools import cache
 from typing import ClassVar
 
-from ._func_call import FuncCallCollector, func_call_hookimpl
+from .base import FuncCallCollector
+from .hooks import func_call_hookimpl
 
 
 class EnvironmentCollector(FuncCallCollector):

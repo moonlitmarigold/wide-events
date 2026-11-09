@@ -5,7 +5,9 @@ from copy import deepcopy
 
 import pytest
 
-from wide_events.logging import DEFAULT_LOGGING, LoggerNames, LogEvent, log_event
+from wide_events.event import LogEvent
+from wide_events.recorder import log_event
+from wide_events.settings import DEFAULT_LOGGING, LoggerNames
 
 
 @pytest.fixture

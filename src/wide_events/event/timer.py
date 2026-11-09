@@ -1,16 +1,12 @@
-from .base import EventBlock
 from dataclasses import dataclass, field
 import time
 from typing import Callable
 
-class TimerNotStarted(Exception):
-    """Raised when a timer is stopped before it was started."""
-
-    def __init__(self):
-        super().__init__("The Timer has not been started so it cant record a time.")
+from .blocks import EventBlock
+from .errors import TimerNotStarted
 
 @dataclass
-class _Timer:
+class Timer:
 
     save_timer:Callable
     timer_start: float | None = field(init=False, default=None)
@@ -41,7 +37,7 @@ class TimerEventBlock(EventBlock, abstract=True):
     def timer(self, name:str):
         """A timer that saves its duration as `timers.<name>_ms` on this block, used as a context manager or with
         `start_timer()`/`stop_timer()`."""
-        return _Timer(self.save_timer(name))
+        return Timer(self.save_timer(name))
 
     def save_timer(self, name:str):
         """A callback that writes a duration in ms as `timers.<name>_ms` on this block."""

@@ -9,11 +9,11 @@ Decisions that have to be made before the first PyPI release. Each one is **open
 - Note: GPL makes every project that imports the package GPL too. MIT or Apache-2.0 is the usual choice for a
   library that others should adopt freely.
 
-## 2. Relative vs. absolute imports — open
+## 2. Relative vs. absolute imports — decided (2026-11-07): relative
 
 - The copied code uses relative imports (`from ..context import ContextEvent`), like infra.
 - The `python-code-style` skill prefers absolute imports (`from wide_events.context import ContextEvent`).
-- Once decided, record the rule in the `python-code-style` skill and apply it to the whole package.
+- Decided: relative imports inside the package (tests stay absolute). Applied in the 2026-11-07 restructure.
 
 ## 3. Optional dependencies — decided (2026-10-25)
 
@@ -22,15 +22,28 @@ Decisions that have to be made before the first PyPI release. Each one is **open
 
   | Layer                  | Install                  | Contents                                                     |
   |------------------------|--------------------------|--------------------------------------------------------------|
-  | core                   | `wide-events`            | `context`, `blocks`, `event`, `collectors`, `results`, `checks`, `formatters` |
+  | core                   | `wide-events`            | `context`, `event`, `collectors`, `recorder`, `settings`, `results`, `checks` |
   | `wide_events.terminal` | either extra             | the shared rich `Console` (`Terminal`)                       |
-  | `wide_events.log`      | `wide-events[log]`       | `LogConfig`, handlers, `Debug`                               |
+  | `wide_events.log`      | `wide-events[log]`       | handlers (`FileHandler`)                                     |
   | `wide_events.ui`       | `wide-events[ui]`        | `ProgressDisplay`, `ProgressBar`, `Menu`                     |
 
 - The event lifecycle (`WideEvent.wrap`, `log_event`) moved from `log` to the core `event` module. It emits
   through stdlib `logging` with the fields on `record.event`, which `JSONFORMATTER` and `LogConfig` both render.
 - `checks` no longer imports `log`: it logs a missing argument through stdlib `logging` and dropped its
   `debug()` calls, so it runs without `LogConfig.configure()`.
+
+## 3b. Package layout — decided (2026-11-07)
+
+Layers, each importing only from the ones below; the pre-restructure package is kept in `old/pre_restructure/`:
+
+| Layer | Contents |
+|---|---|
+| `context`, `results` | ContextVar plumbing (`BaseContext`, `ContextDict`, `ContextCollection`, ...); result dataclasses |
+| `event` | named contexts (`LogContext`, `CollectorState`, `ContextBlock`), `EventBlock`s, `Timer`, errors |
+| `collectors` | `hooks` (pluggy specs), `base` (base classes, registry), `builtin`, `func_call` (unwired) |
+| `settings` | `DEFAULT_LOGGING`, `LoggerNames`; the planned `Settings` composition root |
+| `recorder` | `record_event`, `log_event`, `record_function_call` |
+| `log`, `terminal`, `ui` | extras |
 
 ## 4. Collector engine: own implementation vs. pluggy — open
 

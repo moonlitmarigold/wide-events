@@ -1,13 +1,15 @@
-from class_registry import ClassRegistry
-from abc import abstractmethod, ABC
-from ..context.log import LogContext
-from class_registry.base import AutoRegister
+from abc import ABC, abstractmethod
 from functools import cache, wraps
-from typing import ClassVar, Callable, Any
-from ..context import ContextDict, BaseContext
-from ..results import ExceptionResult
+from typing import Any, Callable, ClassVar
 
-CollectorState = ContextDict.new("collector_state")
+import pluggy
+from class_registry import ClassRegistry
+from class_registry.base import AutoRegister
+
+from ..context import BaseContext
+from ..event import CollectorState, LogContext
+from ..results import ExceptionResult
+from .hooks import LoggingHooks
 
 class CollectorError(ExceptionResult):
     """An exception raised inside a collector hook, as `ExceptionResult` tagged `result_name: "CollectorError"`."""
@@ -77,5 +79,32 @@ class BaseCollector(ABC):
         return CollectorState.get().setdefault(self.name, self.state_type())
 
 
+LOGGING_COLLECTORS = ClassRegistry["LoggingCollector"](attr_name="name", unique=True)
+
+class LoggingCollector(AutoRegister(LOGGING_COLLECTORS), BaseCollector, ABC):
+    """A collector for `log_event`; each concrete subclass registers itself in `LOGGING_COLLECTORS` under its
+    `name`."""
+
+    hook_names = ("on_create", "on_exception", "on_finish")
+    context = LogContext
+
+    @staticmethod
+    @cache
+    def return_pm():
+        """The `PluginManager` with `LoggingHooks` and every key of `LOGGING_COLLECTORS` registered, built on the
+        first call and cached per class."""
+        pm = pluggy.PluginManager("wide_events")
+        pm.add_hookspecs(LoggingHooks)
+        for collector in LOGGING_COLLECTORS.values(): # TODO: Replace with settings DEFAULT COLLECTOR
+            pm.register(collector())
+        return pm
 
 
+class FuncCallCollector(BaseCollector, ABC):
+    """Stub base for the collectors of `record_function_call`. Not wired: no registry, hookspecs or plugin
+    manager yet, so no subclass runs."""
+
+    # TODO: FUNCCALL_COLLECTORS registry (AutoRegister), FuncCallHooks hookspecs and return_pm, once
+    #  record_function_call exists; context may become its own FuncCallContext
+    hook_names = ("on_create", "on_exception", "on_finish")
+    context = LogContext
