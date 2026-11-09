@@ -176,4 +176,5 @@ class SampleLogEvent(EventBlock):
 
 ClassForLogEvent = SampleLogEvent
 LogEvent:EventBlock = ClassForLogEvent
-# TODO: Dynamic LogEvent -> fixed to SampleLogEvent at import; move the choice to the planned config library
+# TODO: Dynamic LogEvent -> fixed to SampleLogEvent at import; `Settings.event_block` holds the choice but nothing reads
+#  it yet. Move the choice to the planned config library

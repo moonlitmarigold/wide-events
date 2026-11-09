@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from functools import cache, wraps
-from typing import Any, Callable, ClassVar
+from functools import wraps
+from typing import Any, Callable, ClassVar, Iterable
 
 import pluggy
 from class_registry import ClassRegistry
@@ -89,14 +89,15 @@ class LoggingCollector(AutoRegister(LOGGING_COLLECTORS), BaseCollector, ABC):
     context = LogContext
 
     @staticmethod
-    @cache
-    def return_pm():
-        """The `PluginManager` with `LoggingHooks` and every key of `LOGGING_COLLECTORS` registered, built on the
-        first call and cached per class."""
+    def build_pm(names:Iterable[str]) -> pluggy.PluginManager:
+        """A new `PluginManager` with `LoggingHooks` and one instance of each named collector registered.
+
+        Input: `LoggingCollector.build_pm(("TimingCollector", "OutcomeCollector"))`; `Settings` caches the result.
+        """
         pm = pluggy.PluginManager("wide_events")
         pm.add_hookspecs(LoggingHooks)
-        for collector in LOGGING_COLLECTORS.values(): # TODO: Replace with settings DEFAULT COLLECTOR
-            pm.register(collector())
+        for name in names:
+            pm.register(LOGGING_COLLECTORS.get_class(name)())
         return pm
 
 

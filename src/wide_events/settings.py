@@ -1,4 +1,14 @@
+from copy import deepcopy
+from dataclasses import dataclass, field
 from enum import StrEnum
+from functools import cached_property
+from logging.config import dictConfig
+from typing import ClassVar
+
+import pluggy
+
+from .collectors import LOGGING_COLLECTORS, LoggingCollector
+from .event import EventBlock, SampleLogEvent
 
 
 class LoggerNames(StrEnum):
@@ -9,10 +19,6 @@ class LoggerNames(StrEnum):
 
 # TODO: Document the logging settings: what each handler/logger is for, that the console handler is WARNING (so
 #  events at INFO never show there), and how to route events elsewhere (own handler + json formatter + propagate=False)
-# TODO: Class-based settings (approach B): a `Settings` class with ClassVars `collectors`, `event_block` and `logging`
-#  (still a plain dictConfig dict), apps subclass it and call `AppSettings.apply()` once. `apply()` runs dictConfig,
-#  sets the active settings that `return_pm`/`LogEvent` read, and is the freeze point for the cached `return_pm`.
-#  Pydantic only in bigger projects, for loading from files.
 # TODO: A debug setting for logging: one switch (e.g. `Settings.debug`) that adds an extra debug call/handler, so
 #  events and DEBUG records also show on the console during development
 
@@ -55,3 +61,65 @@ DEFAULT_LOGGING = {
 
 # TODO: DEBUG Handler/logger -> Wide-Events to the console
 # TODO: Indents on console wide-events
+
+
+# The composition root of `log_event`: only the collectors named here run. pluggy calls the hooks in reverse order
+# of registration, so the last one listed runs first.
+DEFAULT_COLLECTORS = (
+    "ExceptionCollector",
+    "TimingCollector",
+    "TimestampCollector",
+    "OutcomeCollector",
+    "IdentityCollector",
+    "ResultCollector",
+)
+
+
+@dataclass(frozen=True)
+class Settings:
+    """The package's settings; an app builds one, or a subclass with other defaults, and calls `apply()` once.
+
+    Input: `Settings(collectors=(*DEFAULT_COLLECTORS, "MyCollector"), logging=my_logging).apply()`
+
+    Attributes:
+        collectors: Keys of `LOGGING_COLLECTORS` that `log_event` runs, e.g. `"TimingCollector"`.
+        event_block: The block behind `LogEvent`. Not read yet: `LogEvent` is still bound at import.
+        logging: Passed to `dictConfig` by `apply()`; None leaves logging to the app.
+    """
+
+    collectors: tuple[str, ...] = DEFAULT_COLLECTORS
+    event_block: type[EventBlock] = SampleLogEvent
+    logging: dict | None = field(default_factory=lambda: deepcopy(DEFAULT_LOGGING))
+
+    _active: ClassVar["Settings | None"] = None
+
+    def __post_init__(self):
+        unknown = [name for name in self.collectors if name not in LOGGING_COLLECTORS]
+        if unknown:
+            raise ValueError(
+                f"Unknown collectors {unknown}. Registered: {list(LOGGING_COLLECTORS.keys())}. "
+                f"A collector registers when its module is imported, so import it before building the settings."
+            )
+        if not (isinstance(self.event_block, type) and issubclass(self.event_block, EventBlock)):
+            raise TypeError(f"event_block must be an EventBlock subclass (got {self.event_block!r}).")
+
+    def apply(self) -> "Settings":
+        """Run `dictConfig(self.logging)` unless it is None, and make these the settings `log_event` reads."""
+        if self.logging is not None:
+            dictConfig(self.logging)
+        # on the base class, so `AppSettings().apply()` is seen by `Settings.active()` too
+        Settings._active = self
+        return self
+
+    @classmethod
+    def active(cls) -> "Settings":
+        """The settings of the last `apply()`, else the defaults, with logging left unconfigured."""
+        if Settings._active is None:
+            # no dictConfig here: a library must not configure logging just because it was imported
+            Settings._active = Settings()
+        return Settings._active
+
+    @cached_property
+    def plugin_manager(self) -> pluggy.PluginManager:
+        """The `PluginManager` of `collectors`, built on first access and kept for this instance."""
+        return LoggingCollector.build_pm(self.collectors)

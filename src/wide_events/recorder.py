@@ -4,15 +4,14 @@ from typing import Callable
 
 from .context import BaseContext, ContextCollection
 from .event import CollectorState, ContextNames, LogContext
-from .collectors import LoggingCollector
-from .settings import LoggerNames
+from .settings import LoggerNames, Settings
 
 def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, logger):
     """A `log_event`-style decorator that opens `_list_ctx` per call, runs the hooks of the plugin manager `_pm()`
     returns, and emits the drop's `context_name` entry on `logger` (or merges it into the outer `LogContext`).
 
-    Input: `record_event([LogContext, CollectorState], LoggingCollector.return_pm, ContextNames.log_context,
-    logger)` -> `log_event`.
+    Input: `record_event([LogContext, CollectorState], lambda: Settings.active().plugin_manager,
+    ContextNames.log_context, logger)` -> `log_event`.
     """
     def log_event(func):
         """Run `func` in a fresh `LogContext`; afterwards merge its fields into the outer `LogContext` under the
@@ -48,7 +47,9 @@ def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, lo
     return log_event
 
 #  TODO: make the log_event more arbitairy (base event) and make both record_function_call and log_event inherit from it
-log_event = record_event([LogContext, CollectorState], LoggingCollector.return_pm, ContextNames.log_context, logging.getLogger(LoggerNames.EVENT_LOGGER))
+# a lambda, so each call reads the settings active then, not the ones at import
+log_event = record_event([LogContext, CollectorState], lambda: Settings.active().plugin_manager,
+                         ContextNames.log_context, logging.getLogger(LoggerNames.EVENT_LOGGER))
 
 def record_function_call():
     # TODO: Implement the record function call

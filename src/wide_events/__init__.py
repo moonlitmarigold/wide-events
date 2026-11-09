@@ -5,14 +5,15 @@ from .event import (BlockAlreadyAttached, ContextBlock, EventBlock, StatefulEven
                     HookErrorEvent, LogContext, LogEvent, TimerEventBlock)
 from .checks import Checks, InlineCheck
 from .results import MultiCheckResult, SingleCheckResult, Status
-from .settings import DEFAULT_LOGGING, LoggerNames
+from .settings import DEFAULT_COLLECTORS, DEFAULT_LOGGING, LoggerNames, Settings
 from .recorder import log_event
 
 __all__ = [
-    "BlockAlreadyAttached", "Checks", "ContextBlock", "ContextList", "DEFAULT_LOGGING", "EventBlock",
-    "ExceptionEvent", "HookErrorEvent", "InlineCheck", "LogContext", "LogEvent", "LoggerNames",
-    "MultiCheckResult", "SingleCheckResult", "StatefulEventBlock", "Status", "TimerEventBlock", "log_event",
+    "BlockAlreadyAttached", "Checks", "ContextBlock", "ContextList", "DEFAULT_COLLECTORS", "DEFAULT_LOGGING",
+    "EventBlock", "ExceptionEvent", "HookErrorEvent", "InlineCheck", "LogContext", "LogEvent", "LoggerNames",
+    "MultiCheckResult", "SingleCheckResult", "Settings", "StatefulEventBlock", "Status", "TimerEventBlock",
+    "log_event",
 ]
 
-# a library stays silent until the app configures logging, e.g. with DEFAULT_LOGGING
+# a library stays silent until the app configures logging, e.g. with Settings().apply()
 logging.getLogger("wide_events").addHandler(logging.NullHandler())
