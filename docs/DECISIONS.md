@@ -40,7 +40,7 @@ Layers, each importing only from the ones below; the pre-restructure package is 
 |---|---|
 | `context`, `results` | ContextVar plumbing (`BaseContext`, `ContextDict`, `ContextCollection`, ...); result dataclasses |
 | `event` | named contexts (`LogContext`, `CollectorState`, `ContextBlock`), `EventBlock`s, `Timer`, errors |
-| `collectors` | `hooks` (pluggy specs), `base` (base classes, registry), `builtin`, `func_call` (unwired) |
+| `collectors` | `hooks` (pluggy specs), `base` (base classes, both registries), `builtin` (`log_event`), `func_call` (`record_function_call`) |
 | `settings` | `DEFAULT_LOGGING`, `LoggerNames`, `DEFAULT_COLLECTORS`; `Settings` (frozen dataclass, `apply()`), the composition root |
 | `recorder` | `record_event`, `log_event`, `record_function_call` |
 | `log`, `terminal`, `ui` | extras |

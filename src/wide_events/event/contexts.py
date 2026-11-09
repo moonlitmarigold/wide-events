@@ -9,12 +9,17 @@ class ContextNames(StrEnum):
     """The names of the logging contexts, which are also their keys in `ContextCollection.drop()`."""
 
     log_context = auto()
+    func_call_context = auto()
 
 
 LogContext = ContextDict.new(ContextNames.log_context)
 #ResultContext = ContextDict.new("results") Results later
 
 CollectorState = ContextDict.new("collector_state")
+
+# the same pair for `record_function_call`, so its fields and collector state never mix with the `log_event` ones
+FuncCallContext = ContextDict.new(ContextNames.func_call_context)
+FuncCallState = ContextDict.new("func_call_state")
 
 
 @dataclass

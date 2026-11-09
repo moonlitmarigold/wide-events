@@ -3,19 +3,25 @@ import logging
 from typing import Callable
 
 from .context import BaseContext, ContextCollection
-from .event import CollectorState, ContextNames, LogContext
+from .event import CollectorState, ContextNames, FuncCallContext, FuncCallState, LogContext
 from .settings import LoggerNames, Settings
 
 def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, logger):
     """A `log_event`-style decorator that opens `_list_ctx` per call, runs the hooks of the plugin manager `_pm()`
-    returns, and emits the drop's `context_name` entry on `logger` (or merges it into the outer `LogContext`).
+    returns, and emits the drop's `context_name` entry on `logger` (or merges it into the outer context of that
+    name).
 
     Input: `record_event([LogContext, CollectorState], lambda: Settings.active().plugin_manager,
     ContextNames.log_context, logger)` -> `log_event`.
     """
+    contexts = {c.__name__: c for c in _list_ctx}
+    if context_name not in contexts:
+        raise ValueError(f"context_name {context_name!r} is none of the contexts {list(contexts)}.")
+    event_context = contexts[context_name]
+
     def log_event(func):
-        """Run `func` in a fresh `LogContext`; afterwards merge its fields into the outer `LogContext` under the
-        function's name, or, without an outer one, emit them as one record on the `EVENT_LOGGER`."""
+        """Run `func` in fresh contexts; afterwards merge its fields into the outer event context under the
+        function's name, or, without an outer one, emit them as one record on `logger`."""
         name = func.__name__
 
         @wraps(func)
@@ -41,17 +47,21 @@ def record_event(_list_ctx:list[BaseContext], _pm:Callable, context_name:str, lo
                     # the fields travel as `record.event`, which the `json` formatter of DEFAULT_LOGGING puts into the line
                     logger.info(name, extra={"event": context_result})
                 else:
-                    LogContext.update({name:context_result})
+                    event_context.update({name:context_result})
 
         return wrapper
     return log_event
 
-#  TODO: make the log_event more arbitairy (base event) and make both record_function_call and log_event inherit from it
 # a lambda, so each call reads the settings active then, not the ones at import
 log_event = record_event([LogContext, CollectorState], lambda: Settings.active().plugin_manager,
                          ContextNames.log_context, logging.getLogger(LoggerNames.EVENT_LOGGER))
 
-def record_function_call():
-    # TODO: Implement the record function call
-    ...
+# its own contexts, so a function call records apart from any `log_event` around it
+record_function_call = record_event([FuncCallContext, FuncCallState],
+                                    lambda: Settings.active().func_call_plugin_manager,
+                                    ContextNames.func_call_context, logging.getLogger(LoggerNames.FUNC_CALL_LOGGER))
 # TODO: Combination of FuncCall and LogEvent, that appends the funccall to the Main Event
+
+def record_result():
+    # TODO: Implement the record of results
+    ...

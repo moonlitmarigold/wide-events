@@ -7,7 +7,7 @@ from class_registry import ClassRegistry
 from class_registry.base import AutoRegister
 
 from ..context import BaseContext
-from ..event import CollectorState, LogContext
+from ..event import CollectorState, FuncCallContext, FuncCallState, LogContext
 from ..results import ExceptionResult
 from .hooks import LoggingHooks
 
@@ -33,7 +33,7 @@ class BaseCollector(ABC):
     @property
     @abstractmethod
     def name(self) -> str:
-        """The collector's registry key, also its key in `CollectorState`."""
+        """The collector's registry key, also its key in `state_context`."""
 
     @property
     @abstractmethod
@@ -45,6 +45,11 @@ class BaseCollector(ABC):
     def context(self) -> BaseContext:
         """The context the collector writes to, e.g. `LogContext`."""
 
+    @property
+    @abstractmethod
+    def state_context(self) -> BaseContext:
+        """The context that holds the collectors' per-call state, e.g. `CollectorState`."""
+
     def __init_subclass__(cls, **kwargs) -> None:
         for hook_name in getattr(cls, "hook_names", ()):
             func = cls.__dict__.get(hook_name)
@@ -54,29 +59,37 @@ class BaseCollector(ABC):
     def __setattr__(self, key, value):
         raise TypeError(f"{type(self).__name__} is stateless")
 
-    @staticmethod
-    def set(**kwargs):
-        """Merge `kwargs` into the current `LogContext` event."""
-        LogContext.update(kwargs)
+    def set(self, **kwargs):
+        """Merge `kwargs` into the current event of `context`."""
+        self.context.update(kwargs)
 
     @staticmethod
     def save_run(func, hook_name):
-        """Wrap the hook `func` so an exception it raises is appended to `hook_errors` in the current `LogContext`
-        and the hook returns None, instead of stopping the other collectors."""
+        """Wrap the hook `func` so an exception it raises is appended to `hook_errors` in the current event of
+        `context` and the hook returns None, instead of stopping the other collectors."""
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             try:
                 return func(self, *args, **kwargs)
             except Exception as exc:
                 # TODO: Hook Error Event, similar to results -> Universal from exc
-                LogContext.update({"hook_errors": [CollectorError.from_exception(exc).dump()]}, append_lists=True)
+                self.context.update({"hook_errors": [CollectorError.from_exception(exc).dump()]}, append_lists=True)
         return wrapper
 
     @property
     def state(self):
-        """This collector's state for the current call, stored in the open `CollectorState` under `name` and
+        """This collector's state for the current call, stored in the open `state_context` under `name` and
         created with `state_type()` on first access."""
-        return CollectorState.get().setdefault(self.name, self.state_type())
+        return self.state_context.get().setdefault(self.name, self.state_type())
+
+    @staticmethod
+    def new_pm(registry:ClassRegistry, names:Iterable[str]) -> pluggy.PluginManager:
+        """A new `PluginManager` with `LoggingHooks` and one instance of each named collector of `registry`."""
+        pm = pluggy.PluginManager("wide_events")
+        pm.add_hookspecs(LoggingHooks)
+        for name in names:
+            pm.register(registry.get_class(name)())
+        return pm
 
 
 LOGGING_COLLECTORS = ClassRegistry["LoggingCollector"](attr_name="name", unique=True)
@@ -87,25 +100,31 @@ class LoggingCollector(AutoRegister(LOGGING_COLLECTORS), BaseCollector, ABC):
 
     hook_names = ("on_create", "on_exception", "on_finish")
     context = LogContext
+    state_context = CollectorState
 
     @staticmethod
     def build_pm(names:Iterable[str]) -> pluggy.PluginManager:
-        """A new `PluginManager` with `LoggingHooks` and one instance of each named collector registered.
+        """A new `PluginManager` of the named `LOGGING_COLLECTORS`.
 
         Input: `LoggingCollector.build_pm(("TimingCollector", "OutcomeCollector"))`; `Settings` caches the result.
         """
-        pm = pluggy.PluginManager("wide_events")
-        pm.add_hookspecs(LoggingHooks)
-        for name in names:
-            pm.register(LOGGING_COLLECTORS.get_class(name)())
-        return pm
+        return BaseCollector.new_pm(LOGGING_COLLECTORS, names)
 
 
-class FuncCallCollector(BaseCollector, ABC):
-    """Stub base for the collectors of `record_function_call`. Not wired: no registry, hookspecs or plugin
-    manager yet, so no subclass runs."""
+FUNCCALL_COLLECTORS = ClassRegistry["FuncCallCollector"](attr_name="name", unique=True)
 
-    # TODO: FUNCCALL_COLLECTORS registry (AutoRegister), FuncCallHooks hookspecs and return_pm, once
-    #  record_function_call exists; context may become its own FuncCallContext
+class FuncCallCollector(AutoRegister(FUNCCALL_COLLECTORS), BaseCollector, ABC):
+    """A collector for `record_function_call`; each concrete subclass registers itself in `FUNCCALL_COLLECTORS`
+    under its `name`. Same hooks as `LoggingCollector`, its own contexts."""
+
     hook_names = ("on_create", "on_exception", "on_finish")
-    context = LogContext
+    context = FuncCallContext
+    state_context = FuncCallState
+
+    @staticmethod
+    def build_funccall_pm(names:Iterable[str]) -> pluggy.PluginManager:
+        """A new `PluginManager` of the named `FUNCCALL_COLLECTORS`.
+
+        Input: `FuncCallCollector.build_funccall_pm(("ArgumentsCollector",))`; `Settings` caches the result.
+        """
+        return BaseCollector.new_pm(FUNCCALL_COLLECTORS, names)

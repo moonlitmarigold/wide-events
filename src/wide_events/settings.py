@@ -7,7 +7,7 @@ from typing import ClassVar
 
 import pluggy
 
-from .collectors import LOGGING_COLLECTORS, LoggingCollector
+from .collectors import FUNCCALL_COLLECTORS, FuncCallCollector, LOGGING_COLLECTORS, LoggingCollector
 from .event import EventBlock, SampleLogEvent
 
 
@@ -15,6 +15,7 @@ class LoggerNames(StrEnum):
     """The names of the package's loggers, for `logging.getLogger` and the `loggers` of `DEFAULT_LOGGING`."""
 
     EVENT_LOGGER = "wide_events.event"
+    FUNC_CALL_LOGGER = "wide_events.func_call"
     DEBUG = "wide_events.debug"
 
 # TODO: Document the logging settings: what each handler/logger is for, that the console handler is WARNING (so
@@ -80,6 +81,7 @@ DEFAULT_LOGGING = {
     "loggers": {
         # wide events go to the file only; everything else reaches the console through the root
         LoggerNames.EVENT_LOGGER: {"handlers": ["file"], "level": "INFO", "propagate": False},
+        LoggerNames.FUNC_CALL_LOGGER: {"handlers": ["file"], "level": "INFO", "propagate": False},
     },
     "root": {"handlers": ["console"], "level": "INFO"},
 }
@@ -95,6 +97,13 @@ DEFAULT_COLLECTORS = (
     "ResultCollector",
 )
 
+# The same for `record_function_call`.
+DEFAULT_FUNC_CALL_COLLECTORS = (
+    "EnvironmentCollector",
+    "ArgumentsCollector",
+    "ResourceCollector",
+)
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -104,15 +113,17 @@ class Settings:
 
     Attributes:
         collectors: Keys of `LOGGING_COLLECTORS` that `log_event` runs, e.g. `"TimingCollector"`.
+        func_call_collectors: Keys of `FUNCCALL_COLLECTORS` that `record_function_call` runs.
         event_block: The block behind `LogEvent`. Not read yet: `LogEvent` is still bound at import.
         logging: Passed to `dictConfig` by `apply()`; None leaves logging to the app.
         debug: `apply()` adds the debug logger at DEBUG on the `debug` handler, so `terminal.debug()` shows.
         debug_logger_name: The logger `terminal.debug()` writes to.
-        debug_events: `apply()` adds the `debug_json` handler to the event logger, so each wide event also shows on
-            the console as indented JSON.
+        debug_events: `apply()` adds the `debug_json` handler to the event and function-call loggers, so each wide
+            event also shows on the console as indented JSON.
     """
 
     collectors: tuple[str, ...] = DEFAULT_COLLECTORS
+    func_call_collectors: tuple[str, ...] = DEFAULT_FUNC_CALL_COLLECTORS
     event_block: type[EventBlock] = SampleLogEvent
     logging: dict | None = field(default_factory=lambda: deepcopy(DEFAULT_LOGGING))
     debug:bool = False
@@ -122,12 +133,14 @@ class Settings:
     _active: ClassVar["Settings | None"] = None
 
     def __post_init__(self):
-        unknown = [name for name in self.collectors if name not in LOGGING_COLLECTORS]
-        if unknown:
-            raise ValueError(
-                f"Unknown collectors {unknown}. Registered: {list(LOGGING_COLLECTORS.keys())}. "
-                f"A collector registers when its module is imported, so import it before building the settings."
-            )
+        for field_name, registry in (("collectors", LOGGING_COLLECTORS),
+                                     ("func_call_collectors", FUNCCALL_COLLECTORS)):
+            unknown = [name for name in getattr(self, field_name) if name not in registry]
+            if unknown:
+                raise ValueError(
+                    f"Unknown {field_name} {unknown}. Registered: {list(registry.keys())}. "
+                    f"A collector registers when its module is imported, so import it before building the settings."
+                )
         if not (isinstance(self.event_block, type) and issubclass(self.event_block, EventBlock)):
             raise TypeError(f"event_block must be an EventBlock subclass (got {self.event_block!r}).")
 
@@ -144,7 +157,7 @@ class Settings:
         """`logging` with the debug switches applied, as a new dict: `self.logging` may be the caller's own config.
 
         `debug` -> `loggers[debug_logger_name] = {"handlers": ["debug"], "level": "DEBUG", ...}`
-        `debug_events` -> `loggers["wide_events.event"]["handlers"] = [*handlers, "debug_json"]`
+        `debug_events` -> `loggers["wide_events.event" | "wide_events.func_call"]["handlers"] += ["debug_json"]`
         """
         loggers = dict(self.logging.get("loggers", {}))
         if self.debug:
@@ -154,9 +167,9 @@ class Settings:
             # `apply()` with debug=True would stay on. A debug logger in `logging` itself wins.
             loggers.setdefault(self.debug_logger_name, {"handlers": [], "level": "NOTSET", "propagate": True})
         if self.debug_events:
-            event_logger = loggers.get(LoggerNames.EVENT_LOGGER, {})
-            loggers[LoggerNames.EVENT_LOGGER] = {**event_logger,
-                                                 "handlers": [*event_logger.get("handlers", []), "debug_json"]}
+            for name in (LoggerNames.EVENT_LOGGER, LoggerNames.FUNC_CALL_LOGGER):
+                event_logger = loggers.get(name, {})
+                loggers[name] = {**event_logger, "handlers": [*event_logger.get("handlers", []), "debug_json"]}
         return {**self.logging, "loggers": loggers}
 
     @classmethod
@@ -171,3 +184,8 @@ class Settings:
     def plugin_manager(self) -> pluggy.PluginManager:
         """The `PluginManager` of `collectors`, built on first access and kept for this instance."""
         return LoggingCollector.build_pm(self.collectors)
+
+    @cached_property
+    def func_call_plugin_manager(self) -> pluggy.PluginManager:
+        """The `PluginManager` of `func_call_collectors`, built on first access and kept for this instance."""
+        return FuncCallCollector.build_funccall_pm(self.func_call_collectors)

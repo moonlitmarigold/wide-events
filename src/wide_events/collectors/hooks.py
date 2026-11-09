@@ -2,18 +2,19 @@ import pluggy
 
 logging_hookspec = pluggy.HookspecMarker("wide_events")
 logging_hookimpl = pluggy.HookimplMarker("wide_events")
-# same project name as the logging marker, so these impls also fit `LoggingHooks` until funccall gets its own specs
+# same project name as the logging marker: function-call collectors implement `LoggingHooks` too
 func_call_hookimpl = pluggy.HookimplMarker("wide_events")
 
 class LoggingHooks:  # was the enum
-    """The pluggy hookspecs of the `log_event` phases, which `LoggingCollector` subclasses implement."""
+    """The pluggy hookspecs of the `log_event` and `record_function_call` phases, which `LoggingCollector` and
+    `FuncCallCollector` subclasses implement."""
 
     @logging_hookspec
     def on_create(self, name, func, args, kwargs):
-        """Called by `log_event` after it opens the event, before the decorated function runs."""
+        """Called after the event is opened, before the decorated function runs."""
     @logging_hookspec
     def on_exception(self, name, func, args, kwargs, exception):
-        """The phase for when the decorated function raises; `log_event` does not call it yet."""
+        """Called when the decorated function raises, before the exception is re-raised."""
     @logging_hookspec
     def on_finish(self, name, func, args, kwargs, result):
-        """The phase for when the decorated function returns; `log_event` does not call it yet."""
+        """Called when the decorated function returns."""
